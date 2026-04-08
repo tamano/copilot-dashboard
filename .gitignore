@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Data files (CSVs contain organization/user info)
+data/*.csv
+
+# Generated dashboards
+dashboard_*.html
+
+# Claude Code
+.claude/

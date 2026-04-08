@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copilot Premium Request Dashboard</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #dbeafe;
+  --success: #10b981;
+  --success-light: #d1fae5;
+  --warning: #f59e0b;
+  --warning-light: #fef3c7;
+  --danger: #ef4444;
+  --danger-light: #fee2e2;
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+.container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+header {
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  color: #fff;
+  padding: 32px 0;
+  margin-bottom: 24px;
+}
+header .container { display: flex; justify-content: space-between; align-items: center; }
+header h1 { font-size: 1.5rem; font-weight: 700; }
+header .meta { font-size: 0.875rem; opacity: 0.85; text-align: right; }
+header .meta div { margin-top: 4px; }
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid var(--border);
+}
+.card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.card-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+.chart-section {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid var(--border);
+}
+.chart-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+.chart-legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.chart-legend span { display: flex; align-items: center; gap: 6px; }
+.chart-legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+canvas { width: 100% !important; }
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border);
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+th:hover { color: var(--primary); }
+th .sort-arrow { margin-left: 4px; font-size: 0.65rem; }
+td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tr:hover td { background: #f8fafc; }
+.quota-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.quota-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.model-bar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+}
+.model-bar-label {
+  width: 200px;
+  min-width: 200px;
+  text-align: right;
+  padding-right: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.model-bar-track {
+  flex: 1;
+  height: 24px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.model-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  min-width: fit-content;
+  white-space: nowrap;
+}
+.user-model-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+}
+.user-model-label {
+  width: 160px;
+  min-width: 160px;
+  text-align: right;
+  padding-right: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.user-model-track {
+  flex: 1;
+  height: 22px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+}
+.user-model-seg {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+  white-space: nowrap;
+  min-width: 0;
+}
+.user-model-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.user-model-legend span { display: flex; align-items: center; gap: 5px; }
+.user-model-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>Copilot Premium Request Dashboard</h1>
+    <div class="meta">
+      <div id="hd-org"></div>
+      <div id="hd-period"></div>
+      <div id="hd-generated"></div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="summary-grid">
+    <div class="card">
+      <div class="card-title">Total Requests</div>
+      <div class="card-value" id="sm-requests"></div>
+      <div class="card-sub" id="sm-requests-sub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total Cost</div>
+      <div class="card-value" id="sm-cost"></div>
+      <div class="card-sub" id="sm-cost-sub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Active Users</div>
+      <div class="card-value" id="sm-users"></div>
+      <div class="card-sub" id="sm-users-sub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avg Quota Usage</div>
+      <div class="card-value" id="sm-quota"></div>
+      <div class="card-sub" id="sm-quota-sub"></div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>Daily Trend</h2>
+    <div class="chart-legend">
+      <span><i style="background:var(--primary)"></i> Daily Requests</span>
+      <span><i style="background:var(--danger);opacity:0.6"></i> Quota Exceeded Users</span>
+    </div>
+    <canvas id="chart-daily" height="280"></canvas>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-section">
+      <h2>User Ranking</h2>
+      <div style="max-height:480px;overflow-y:auto;">
+        <table id="tbl-users">
+          <thead>
+            <tr>
+              <th data-col="rank">#</th>
+              <th data-col="username">User</th>
+              <th data-col="total_requests">Requests</th>
+              <th data-col="total_cost">Cost ($)</th>
+              <th data-col="quota_pct">Quota</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-users-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="chart-section">
+      <h2>Model Breakdown</h2>
+      <div id="model-bars"></div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>User Model Breakdown（有料モデル）</h2>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;">クォータ上限（<span id="paid-quota-label"></span> requests）を100%として表示</p>
+    <div id="paid-model-legend" class="user-model-legend"></div>
+    <div id="paid-model-bars"></div>
+  </div>
+
+  <div class="chart-section">
+    <h2>User Model Breakdown（無料モデル）</h2>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;">Auto選択モデルの利用状況</p>
+    <div id="free-model-legend" class="user-model-legend"></div>
+    <div id="free-model-bars"></div>
+  </div>
+</div>
+
+<footer>
+  Generated by Copilot Premium Request Dashboard Skill
+</footer>
+
+<script>
+const D = /*{{DASHBOARD_DATA}}*/null;
+
+function fmt(n, d) { return Number(n).toFixed(d === undefined ? 1 : d); }
+function fmtInt(n) { return Number(n).toLocaleString(); }
+function quotaColor(pct) {
+  if (pct >= 100) return 'var(--danger)';
+  if (pct >= 80) return 'var(--warning)';
+  return 'var(--success)';
+}
+function escapeText(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+var MODEL_COLORS = [
+  '#2563eb','#7c3aed','#0891b2','#059669','#d97706',
+  '#dc2626','#4f46e5','#0d9488','#ca8a04','#be185d',
+  '#6366f1','#14b8a6','#f59e0b','#ef4444','#8b5cf6',
+  '#06b6d4','#10b981','#f97316','#e11d48','#6d28d9',
+  '#0ea5e9','#84cc16'
+];
+
+// --- Header ---
+document.getElementById('hd-org').textContent = D.summary.organization;
+document.getElementById('hd-period').textContent = D.summary.date_range;
+document.getElementById('hd-generated').textContent = 'Generated: ' + D.summary.generated_at;
+
+// --- Summary Cards ---
+document.getElementById('sm-requests').textContent = fmtInt(Math.round(D.summary.total_requests));
+document.getElementById('sm-requests-sub').textContent = fmt(D.summary.total_requests / D.summary.active_users) + ' avg/user';
+document.getElementById('sm-cost').textContent = '$' + fmt(D.summary.total_cost, 2);
+document.getElementById('sm-cost-sub').textContent = '$' + fmt(D.summary.total_cost / D.summary.active_users, 2) + ' avg/user';
+document.getElementById('sm-users').textContent = D.summary.active_users;
+document.getElementById('sm-users-sub').textContent = 'Quota: ' + D.summary.total_monthly_quota + ' req/month';
+document.getElementById('sm-quota').textContent = fmt(D.summary.avg_quota_pct) + '%';
+document.getElementById('sm-quota-sub').textContent = D.summary.exceeded_users + ' user(s) exceeded quota';
+
+// --- Daily Trend Chart ---
+(function() {
+  var canvas = document.getElementById('chart-daily');
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 280 * dpr;
+  ctx.scale(dpr, dpr);
+  var W = rect.width, H = 280;
+  var pad = { top: 20, right: 60, bottom: 50, left: 60 };
+  var cW = W - pad.left - pad.right;
+  var cH = H - pad.top - pad.bottom;
+
+  var dates = D.daily_trend.dates;
+  var reqs = D.daily_trend.daily_requests;
+  var exceeded = D.daily_trend.quota_exceeded_count;
+  var n = dates.length;
+
+  var maxReq = Math.max.apply(null, reqs) * 1.15 || 1;
+  var maxExc = Math.max(Math.max.apply(null, exceeded), 1) * 1.3;
+
+  function xPos(i) { return pad.left + (i / (n - 1 || 1)) * cW; }
+  function yReq(v) { return pad.top + cH - (v / maxReq) * cH; }
+
+  // Grid lines
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  var gi;
+  for (gi = 0; gi <= 5; gi++) {
+    var gy = pad.top + (cH / 5) * gi;
+    ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(W - pad.right, gy); ctx.stroke();
+  }
+
+  // Exceeded bars
+  var barW = Math.max(cW / n * 0.5, 4);
+  ctx.fillStyle = 'rgba(239,68,68,0.25)';
+  ctx.strokeStyle = 'rgba(239,68,68,0.6)';
+  ctx.lineWidth = 1;
+  var bi;
+  for (bi = 0; bi < n; bi++) {
+    if (exceeded[bi] > 0) {
+      var bh = (exceeded[bi] / maxExc) * cH;
+      var bx = xPos(bi) - barW / 2;
+      var by = pad.top + cH - bh;
+      ctx.fillRect(bx, by, barW, bh);
+      ctx.strokeRect(bx, by, barW, bh);
+    }
+  }
+
+  // Request line
+  ctx.beginPath();
+  ctx.strokeStyle = '#2563eb';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  var li;
+  for (li = 0; li < n; li++) {
+    var lx = xPos(li), ly = yReq(reqs[li]);
+    if (li === 0) { ctx.moveTo(lx, ly); } else { ctx.lineTo(lx, ly); }
+  }
+  ctx.stroke();
+
+  // Dots
+  var di;
+  for (di = 0; di < n; di++) {
+    ctx.beginPath();
+    ctx.arc(xPos(di), yReq(reqs[di]), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#2563eb';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // X-axis labels
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  var step = Math.max(1, Math.floor(n / 12));
+  var xi;
+  for (xi = 0; xi < n; xi += step) {
+    ctx.save();
+    ctx.translate(xPos(xi), H - pad.bottom + 16);
+    ctx.rotate(-0.5);
+    ctx.fillText(dates[xi].slice(5), 0, 0);
+    ctx.restore();
+  }
+
+  // Y-axis left (requests)
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#2563eb';
+  var yi;
+  for (yi = 0; yi <= 5; yi++) {
+    var yv = (maxReq / 5) * (5 - yi);
+    ctx.fillText(Math.round(yv), pad.left - 8, pad.top + (cH / 5) * yi + 4);
+  }
+
+  // Y-axis right (exceeded users)
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ef4444';
+  for (yi = 0; yi <= 5; yi++) {
+    var ev = (maxExc / 5) * (5 - yi);
+    ctx.fillText(Math.round(ev), W - pad.right + 8, pad.top + (cH / 5) * yi + 4);
+  }
+
+  // Tooltip
+  canvas.style.cursor = 'crosshair';
+  var tooltip = document.createElement('div');
+  tooltip.style.cssText = 'position:fixed;pointer-events:none;background:#1e293b;color:#fff;padding:8px 12px;border-radius:8px;font-size:12px;display:none;z-index:10;line-height:1.6;white-space:nowrap;';
+  document.body.appendChild(tooltip);
+  canvas.addEventListener('mousemove', function(e) {
+    var r = canvas.getBoundingClientRect();
+    var mx = e.clientX - r.left;
+    var closest = -1, minD = Infinity;
+    var ci;
+    for (ci = 0; ci < n; ci++) {
+      var d = Math.abs(xPos(ci) - mx);
+      if (d < minD) { minD = d; closest = ci; }
+    }
+    if (closest >= 0 && minD < cW / n) {
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top = (e.clientY - 10) + 'px';
+      tooltip.textContent = dates[closest] + ' | Requests: ' + fmt(reqs[closest], 1) + ' | Quota Exceeded: ' + exceeded[closest] + ' user(s)';
+    } else {
+      tooltip.style.display = 'none';
+    }
+  });
+  canvas.addEventListener('mouseleave', function() { tooltip.style.display = 'none'; });
+})();
+
+// --- User Ranking Table ---
+var userData = D.user_stats.map(function(u, i) {
+  return { rank: i + 1, username: u.username, total_requests: u.total_requests, total_cost: u.total_cost, quota_pct: u.quota_pct };
+});
+var sortCol = 'total_requests', sortAsc = false;
+
+function renderUserTable() {
+  var tb = document.getElementById('tbl-users-body');
+  while (tb.firstChild) { tb.removeChild(tb.firstChild); }
+  userData.forEach(function(u, i) {
+    var pct = u.quota_pct;
+    var color = quotaColor(pct);
+    var tr = document.createElement('tr');
+
+    var tdRank = document.createElement('td');
+    tdRank.style.textAlign = 'center';
+    tdRank.style.color = 'var(--muted)';
+    tdRank.textContent = i + 1;
+
+    var tdName = document.createElement('td');
+    tdName.style.fontWeight = '500';
+    tdName.textContent = u.username;
+
+    var tdReq = document.createElement('td');
+    tdReq.textContent = fmt(u.total_requests);
+
+    var tdCost = document.createElement('td');
+    tdCost.textContent = '$' + fmt(u.total_cost, 2);
+
+    var tdQuota = document.createElement('td');
+    tdQuota.style.minWidth = '120px';
+    var qWrap = document.createElement('div');
+    qWrap.style.cssText = 'display:flex;align-items:center;gap:8px';
+    var barBg = document.createElement('div');
+    barBg.className = 'quota-bar-bg';
+    barBg.style.flex = '1';
+    var barFill = document.createElement('div');
+    barFill.className = 'quota-bar-fill';
+    barFill.style.width = Math.min(pct, 100) + '%';
+    barFill.style.background = color;
+    barBg.appendChild(barFill);
+    var pctLabel = document.createElement('span');
+    pctLabel.style.cssText = 'font-size:0.8rem;font-weight:600;min-width:48px;text-align:right';
+    pctLabel.style.color = color;
+    pctLabel.textContent = fmt(pct) + '%';
+    qWrap.appendChild(barBg);
+    qWrap.appendChild(pctLabel);
+    tdQuota.appendChild(qWrap);
+
+    tr.appendChild(tdRank);
+    tr.appendChild(tdName);
+    tr.appendChild(tdReq);
+    tr.appendChild(tdCost);
+    tr.appendChild(tdQuota);
+    tb.appendChild(tr);
+  });
+}
+
+document.querySelectorAll('#tbl-users th').forEach(function(th) {
+  th.addEventListener('click', function() {
+    var col = th.dataset.col;
+    if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = col === 'username'; }
+    userData.sort(function(a, b) {
+      var va = a[col], vb = b[col];
+      if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+      return sortAsc ? va - vb : vb - va;
+    });
+    document.querySelectorAll('#tbl-users th .sort-arrow').forEach(function(el) { el.textContent = ''; });
+    th.querySelector('.sort-arrow').textContent = sortAsc ? ' \u25b2' : ' \u25bc';
+    renderUserTable();
+  });
+  var arrow = document.createElement('span');
+  arrow.className = 'sort-arrow';
+  th.appendChild(arrow);
+});
+renderUserTable();
+
+// --- Model Breakdown ---
+(function() {
+  var container = document.getElementById('model-bars');
+  var maxReq = Math.max.apply(null, D.model_stats.map(function(m) { return m.total_requests; }));
+  D.model_stats.forEach(function(m, i) {
+    var pct = (m.total_requests / maxReq) * 100;
+    var row = document.createElement('div');
+    row.className = 'model-bar-row';
+
+    var label = document.createElement('div');
+    label.className = 'model-bar-label';
+    label.title = m.model;
+    label.textContent = m.model;
+
+    var track = document.createElement('div');
+    track.className = 'model-bar-track';
+    var fill = document.createElement('div');
+    fill.className = 'model-bar-fill';
+    fill.style.width = Math.max(pct, 3) + '%';
+    fill.style.background = MODEL_COLORS[i % MODEL_COLORS.length];
+    fill.textContent = fmt(m.total_requests);
+    track.appendChild(fill);
+
+    row.appendChild(label);
+    row.appendChild(track);
+    container.appendChild(row);
+  });
+})();
+
+// --- User Model Breakdown (Paid / Free split) ---
+(function() {
+  function isFreeModel(name) { return /^Auto:\s/.test(name); }
+
+  // Collect all models and split into paid/free
+  var allPaid = {}, allFree = {};
+  D.user_stats.forEach(function(u) {
+    if (u.models) {
+      Object.keys(u.models).forEach(function(m) {
+        if (isFreeModel(m)) { allFree[m] = true; } else { allPaid[m] = true; }
+      });
+    }
+  });
+  var paidList = Object.keys(allPaid).sort();
+  var freeList = Object.keys(allFree).sort();
+
+  var paidColorMap = {};
+  paidList.forEach(function(m, i) { paidColorMap[m] = MODEL_COLORS[i % MODEL_COLORS.length]; });
+  var freeColorMap = {};
+  freeList.forEach(function(m, i) { freeColorMap[m] = MODEL_COLORS[(i + paidList.length) % MODEL_COLORS.length]; });
+
+  var quota = D.summary.total_monthly_quota || 1;
+
+  // --- Paid models: stacked bar normalized to quota ---
+  document.getElementById('paid-quota-label').textContent = quota;
+
+  // Legend
+  var paidLegendEl = document.getElementById('paid-model-legend');
+  paidList.forEach(function(m) {
+    var span = document.createElement('span');
+    var icon = document.createElement('i');
+    icon.style.background = paidColorMap[m];
+    span.appendChild(icon);
+    span.appendChild(document.createTextNode(m));
+    paidLegendEl.appendChild(span);
+  });
+
+  var paidContainer = document.getElementById('paid-model-bars');
+  // Sort users by paid total desc
+  var paidUserData = D.user_stats.map(function(u) {
+    var paidTotal = 0;
+    paidList.forEach(function(m) { paidTotal += (u.models && u.models[m]) ? u.models[m] : 0; });
+    return { user: u, paidTotal: paidTotal };
+  }).filter(function(d) { return d.paidTotal > 0; }).sort(function(a, b) { return b.paidTotal - a.paidTotal; });
+
+  paidUserData.forEach(function(d) {
+    var u = d.user;
+    var row = document.createElement('div');
+    row.className = 'user-model-row';
+
+    var label = document.createElement('div');
+    label.className = 'user-model-label';
+    label.title = u.username;
+    label.textContent = u.username;
+    row.appendChild(label);
+
+    var trackWrap = document.createElement('div');
+    trackWrap.style.cssText = 'flex:1;display:flex;align-items:center;gap:8px;';
+
+    var track = document.createElement('div');
+    track.className = 'user-model-track';
+
+    paidList.forEach(function(m) {
+      var qty = (u.models && u.models[m]) ? u.models[m] : 0;
+      if (qty <= 0) return;
+      var pct = (qty / quota) * 100;
+      var seg = document.createElement('div');
+      seg.className = 'user-model-seg';
+      seg.style.width = pct + '%';
+      seg.style.background = paidColorMap[m];
+      if (pct > 5) { seg.textContent = fmt(qty); }
+      seg.title = m + ': ' + fmt(qty) + ' (' + fmt(pct) + '% of quota)';
+      track.appendChild(seg);
+    });
+
+    trackWrap.appendChild(track);
+
+    var pctLabel = document.createElement('span');
+    var totalPct = (d.paidTotal / quota) * 100;
+    pctLabel.style.cssText = 'font-size:0.75rem;font-weight:600;min-width:60px;text-align:right;white-space:nowrap;';
+    pctLabel.style.color = quotaColor(totalPct);
+    pctLabel.textContent = fmt(totalPct) + '%';
+    trackWrap.appendChild(pctLabel);
+
+    row.appendChild(trackWrap);
+    paidContainer.appendChild(row);
+  });
+
+  // --- Free models: bar chart showing absolute usage ---
+  var freeLegendEl = document.getElementById('free-model-legend');
+  freeList.forEach(function(m) {
+    var span = document.createElement('span');
+    var icon = document.createElement('i');
+    icon.style.background = freeColorMap[m];
+    span.appendChild(icon);
+    span.appendChild(document.createTextNode(m));
+    freeLegendEl.appendChild(span);
+  });
+
+  var freeContainer = document.getElementById('free-model-bars');
+  // Compute max free total for scaling bars
+  var freeUserData = D.user_stats.map(function(u) {
+    var freeTotal = 0;
+    freeList.forEach(function(m) { freeTotal += (u.models && u.models[m]) ? u.models[m] : 0; });
+    return { user: u, freeTotal: freeTotal };
+  }).filter(function(d) { return d.freeTotal > 0; }).sort(function(a, b) { return b.freeTotal - a.freeTotal; });
+
+  var maxFree = freeUserData.length > 0 ? freeUserData[0].freeTotal : 1;
+
+  freeUserData.forEach(function(d) {
+    var u = d.user;
+    var row = document.createElement('div');
+    row.className = 'user-model-row';
+
+    var label = document.createElement('div');
+    label.className = 'user-model-label';
+    label.title = u.username;
+    label.textContent = u.username;
+    row.appendChild(label);
+
+    var trackWrap = document.createElement('div');
+    trackWrap.style.cssText = 'flex:1;display:flex;align-items:center;gap:8px;';
+
+    var track = document.createElement('div');
+    track.className = 'user-model-track';
+
+    freeList.forEach(function(m) {
+      var qty = (u.models && u.models[m]) ? u.models[m] : 0;
+      if (qty <= 0) return;
+      var pct = (qty / maxFree) * 100;
+      var seg = document.createElement('div');
+      seg.className = 'user-model-seg';
+      seg.style.width = pct + '%';
+      seg.style.background = freeColorMap[m];
+      if (pct > 8) { seg.textContent = fmt(qty); }
+      seg.title = m + ': ' + fmt(qty) + ' requests';
+      track.appendChild(seg);
+    });
+
+    trackWrap.appendChild(track);
+
+    var totalLabel = document.createElement('span');
+    totalLabel.style.cssText = 'font-size:0.75rem;font-weight:600;min-width:60px;text-align:right;white-space:nowrap;color:var(--muted);';
+    totalLabel.textContent = fmt(d.freeTotal) + ' req';
+    trackWrap.appendChild(totalLabel);
+
+    row.appendChild(trackWrap);
+    freeContainer.appendChild(row);
+  });
+})();
+</script>
+</body>
+</html>
