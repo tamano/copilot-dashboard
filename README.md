@@ -41,7 +41,7 @@ ruby scripts/generate_dashboard.rb data/<CSVファイル名> output/report.html
 ## ダッシュボードの内容
 
 - **Summary Cards** — Total Requests、Total Cost、Active Users、Avg Quota Usage（クォータ超過ユーザー数も表示）
-- **Daily Trend** — 日ごとのリクエスト数推移（折れ線）+ クォータ超過ユーザー数（棒グラフ）、ツールチップ対応
+- **Daily Trend** — 日ごとのリクエスト数推移（折れ線）+ クォータ超過率（折れ線・全ユーザーに占める割合%）、ツールチップ対応
 - **User Ranking** — リクエスト数順テーブル（各カラムでソート可能）、クォータ消化率バー付き（80% 以上で警告色、100% 以上で超過色）
 - **Model Breakdown** — モデルごとのリクエスト数を横棒グラフで表示
 - **User Model Breakdown** — ユーザーごとの全モデル利用状況をクォータ上限に対する割合で積み上げ表示

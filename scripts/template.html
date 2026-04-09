@@ -276,7 +276,7 @@ footer {
     <h2>Daily Trend</h2>
     <div class="chart-legend">
       <span><i style="background:var(--primary)"></i> Daily Requests</span>
-      <span><i style="background:var(--danger);opacity:0.6"></i> Quota Exceeded Users</span>
+      <span><i style="background:var(--danger);opacity:0.6"></i> Quota Exceeded Rate (%)</span>
     </div>
     <canvas id="chart-daily" height="280"></canvas>
   </div>
@@ -369,11 +369,12 @@ document.getElementById('sm-quota-sub').textContent = D.summary.exceeded_users +
 
   var dates = D.daily_trend.dates;
   var reqs = D.daily_trend.daily_requests;
-  var exceeded = D.daily_trend.quota_exceeded_count;
+  var totalUsers = D.summary.active_users || 1;
+  var exceededPct = D.daily_trend.quota_exceeded_count.map(function(c) { return (c / totalUsers) * 100; });
   var n = dates.length;
 
   var maxReq = Math.max.apply(null, reqs) * 1.15 || 1;
-  var maxExc = Math.max(Math.max.apply(null, exceeded), 1) * 1.3;
+  var maxExc = Math.min(Math.max(Math.max.apply(null, exceededPct), 1) * 1.3, 100);
 
   function xPos(i) { return pad.left + (i / (n - 1 || 1)) * cW; }
   function yReq(v) { return pad.top + cH - (v / maxReq) * cH; }
@@ -387,20 +388,27 @@ document.getElementById('sm-quota-sub').textContent = D.summary.exceeded_users +
     ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(W - pad.right, gy); ctx.stroke();
   }
 
-  // Exceeded bars
-  var barW = Math.max(cW / n * 0.5, 4);
-  ctx.fillStyle = 'rgba(239,68,68,0.25)';
-  ctx.strokeStyle = 'rgba(239,68,68,0.6)';
-  ctx.lineWidth = 1;
+  // Exceeded line
+  function yExc(v) { return pad.top + cH - (v / maxExc) * cH; }
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(239,68,68,0.7)';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
   var bi;
   for (bi = 0; bi < n; bi++) {
-    if (exceeded[bi] > 0) {
-      var bh = (exceeded[bi] / maxExc) * cH;
-      var bx = xPos(bi) - barW / 2;
-      var by = pad.top + cH - bh;
-      ctx.fillRect(bx, by, barW, bh);
-      ctx.strokeRect(bx, by, barW, bh);
-    }
+    var ex = xPos(bi), ey = yExc(exceededPct[bi]);
+    if (bi === 0) { ctx.moveTo(ex, ey); } else { ctx.lineTo(ex, ey); }
+  }
+  ctx.stroke();
+  // Exceeded dots
+  for (bi = 0; bi < n; bi++) {
+    ctx.beginPath();
+    ctx.arc(xPos(bi), yExc(exceededPct[bi]), 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(239,68,68,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
   }
 
   // Request line
@@ -450,12 +458,12 @@ document.getElementById('sm-quota-sub').textContent = D.summary.exceeded_users +
     ctx.fillText(Math.round(yv), pad.left - 8, pad.top + (cH / 5) * yi + 4);
   }
 
-  // Y-axis right (exceeded users)
+  // Y-axis right (exceeded %)
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ef4444';
   for (yi = 0; yi <= 5; yi++) {
     var ev = (maxExc / 5) * (5 - yi);
-    ctx.fillText(Math.round(ev), W - pad.right + 8, pad.top + (cH / 5) * yi + 4);
+    ctx.fillText(Math.round(ev) + '%', W - pad.right + 8, pad.top + (cH / 5) * yi + 4);
   }
 
   // Tooltip
@@ -476,7 +484,7 @@ document.getElementById('sm-quota-sub').textContent = D.summary.exceeded_users +
       tooltip.style.display = 'block';
       tooltip.style.left = (e.clientX + 14) + 'px';
       tooltip.style.top = (e.clientY - 10) + 'px';
-      tooltip.textContent = dates[closest] + ' | Requests: ' + fmt(reqs[closest], 1) + ' | Quota Exceeded: ' + exceeded[closest] + ' user(s)';
+      tooltip.textContent = dates[closest] + ' | Requests: ' + fmt(reqs[closest], 1) + ' | Quota Exceeded: ' + fmt(exceededPct[closest], 1) + '%';
     } else {
       tooltip.style.display = 'none';
     }
