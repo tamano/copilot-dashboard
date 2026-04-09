@@ -306,18 +306,12 @@ footer {
   </div>
 
   <div class="chart-section">
-    <h2>User Model Breakdown（有料モデル）</h2>
+    <h2>User Model Breakdown</h2>
     <p style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;">クォータ上限（<span id="paid-quota-label"></span> requests）を100%として表示</p>
     <div id="paid-model-legend" class="user-model-legend"></div>
     <div id="paid-model-bars"></div>
   </div>
 
-  <div class="chart-section">
-    <h2>User Model Breakdown（無料モデル）</h2>
-    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;">Auto選択モデルの利用状況</p>
-    <div id="free-model-legend" class="user-model-legend"></div>
-    <div id="free-model-bars"></div>
-  </div>
 </div>
 
 <footer>
@@ -598,50 +592,42 @@ renderUserTable();
 
 // --- User Model Breakdown (Paid / Free split) ---
 (function() {
-  function isFreeModel(name) { return /^Auto:\s/.test(name); }
-
-  // Collect all models and split into paid/free
-  var allPaid = {}, allFree = {};
+  // Collect all models
+  var allModels = {};
   D.user_stats.forEach(function(u) {
     if (u.models) {
-      Object.keys(u.models).forEach(function(m) {
-        if (isFreeModel(m)) { allFree[m] = true; } else { allPaid[m] = true; }
-      });
+      Object.keys(u.models).forEach(function(m) { allModels[m] = true; });
     }
   });
-  var paidList = Object.keys(allPaid).sort();
-  var freeList = Object.keys(allFree).sort();
+  var modelList = Object.keys(allModels).sort();
 
-  var paidColorMap = {};
-  paidList.forEach(function(m, i) { paidColorMap[m] = MODEL_COLORS[i % MODEL_COLORS.length]; });
-  var freeColorMap = {};
-  freeList.forEach(function(m, i) { freeColorMap[m] = MODEL_COLORS[(i + paidList.length) % MODEL_COLORS.length]; });
+  var modelColorMap = {};
+  modelList.forEach(function(m, i) { modelColorMap[m] = MODEL_COLORS[i % MODEL_COLORS.length]; });
 
   var quota = D.summary.total_monthly_quota || 1;
 
-  // --- Paid models: stacked bar normalized to quota ---
   document.getElementById('paid-quota-label').textContent = quota;
 
   // Legend
-  var paidLegendEl = document.getElementById('paid-model-legend');
-  paidList.forEach(function(m) {
+  var legendEl = document.getElementById('paid-model-legend');
+  modelList.forEach(function(m) {
     var span = document.createElement('span');
     var icon = document.createElement('i');
-    icon.style.background = paidColorMap[m];
+    icon.style.background = modelColorMap[m];
     span.appendChild(icon);
     span.appendChild(document.createTextNode(m));
-    paidLegendEl.appendChild(span);
+    legendEl.appendChild(span);
   });
 
-  var paidContainer = document.getElementById('paid-model-bars');
-  // Sort users by paid total desc
-  var paidUserData = D.user_stats.map(function(u) {
-    var paidTotal = 0;
-    paidList.forEach(function(m) { paidTotal += (u.models && u.models[m]) ? u.models[m] : 0; });
-    return { user: u, paidTotal: paidTotal };
-  }).filter(function(d) { return d.paidTotal > 0; }).sort(function(a, b) { return b.paidTotal - a.paidTotal; });
+  var container = document.getElementById('paid-model-bars');
+  // Sort users by total desc
+  var sortedUsers = D.user_stats.map(function(u) {
+    var total = 0;
+    modelList.forEach(function(m) { total += (u.models && u.models[m]) ? u.models[m] : 0; });
+    return { user: u, total: total };
+  }).filter(function(d) { return d.total > 0; }).sort(function(a, b) { return b.total - a.total; });
 
-  paidUserData.forEach(function(d) {
+  sortedUsers.forEach(function(d) {
     var u = d.user;
     var row = document.createElement('div');
     row.className = 'user-model-row';
@@ -658,14 +644,14 @@ renderUserTable();
     var track = document.createElement('div');
     track.className = 'user-model-track';
 
-    paidList.forEach(function(m) {
+    modelList.forEach(function(m) {
       var qty = (u.models && u.models[m]) ? u.models[m] : 0;
       if (qty <= 0) return;
       var pct = (qty / quota) * 100;
       var seg = document.createElement('div');
       seg.className = 'user-model-seg';
       seg.style.width = pct + '%';
-      seg.style.background = paidColorMap[m];
+      seg.style.background = modelColorMap[m];
       if (pct > 5) { seg.textContent = fmt(qty); }
       seg.title = m + ': ' + fmt(qty) + ' (' + fmt(pct) + '% of quota)';
       track.appendChild(seg);
@@ -674,76 +660,14 @@ renderUserTable();
     trackWrap.appendChild(track);
 
     var pctLabel = document.createElement('span');
-    var totalPct = (d.paidTotal / quota) * 100;
+    var totalPct = (d.total / quota) * 100;
     pctLabel.style.cssText = 'font-size:0.75rem;font-weight:600;min-width:60px;text-align:right;white-space:nowrap;';
     pctLabel.style.color = quotaColor(totalPct);
     pctLabel.textContent = fmt(totalPct) + '%';
     trackWrap.appendChild(pctLabel);
 
     row.appendChild(trackWrap);
-    paidContainer.appendChild(row);
-  });
-
-  // --- Free models: bar chart showing absolute usage ---
-  var freeLegendEl = document.getElementById('free-model-legend');
-  freeList.forEach(function(m) {
-    var span = document.createElement('span');
-    var icon = document.createElement('i');
-    icon.style.background = freeColorMap[m];
-    span.appendChild(icon);
-    span.appendChild(document.createTextNode(m));
-    freeLegendEl.appendChild(span);
-  });
-
-  var freeContainer = document.getElementById('free-model-bars');
-  // Compute max free total for scaling bars
-  var freeUserData = D.user_stats.map(function(u) {
-    var freeTotal = 0;
-    freeList.forEach(function(m) { freeTotal += (u.models && u.models[m]) ? u.models[m] : 0; });
-    return { user: u, freeTotal: freeTotal };
-  }).filter(function(d) { return d.freeTotal > 0; }).sort(function(a, b) { return b.freeTotal - a.freeTotal; });
-
-  var maxFree = freeUserData.length > 0 ? freeUserData[0].freeTotal : 1;
-
-  freeUserData.forEach(function(d) {
-    var u = d.user;
-    var row = document.createElement('div');
-    row.className = 'user-model-row';
-
-    var label = document.createElement('div');
-    label.className = 'user-model-label';
-    label.title = u.username;
-    label.textContent = u.username;
-    row.appendChild(label);
-
-    var trackWrap = document.createElement('div');
-    trackWrap.style.cssText = 'flex:1;display:flex;align-items:center;gap:8px;';
-
-    var track = document.createElement('div');
-    track.className = 'user-model-track';
-
-    freeList.forEach(function(m) {
-      var qty = (u.models && u.models[m]) ? u.models[m] : 0;
-      if (qty <= 0) return;
-      var pct = (qty / maxFree) * 100;
-      var seg = document.createElement('div');
-      seg.className = 'user-model-seg';
-      seg.style.width = pct + '%';
-      seg.style.background = freeColorMap[m];
-      if (pct > 8) { seg.textContent = fmt(qty); }
-      seg.title = m + ': ' + fmt(qty) + ' requests';
-      track.appendChild(seg);
-    });
-
-    trackWrap.appendChild(track);
-
-    var totalLabel = document.createElement('span');
-    totalLabel.style.cssText = 'font-size:0.75rem;font-weight:600;min-width:60px;text-align:right;white-space:nowrap;color:var(--muted);';
-    totalLabel.textContent = fmt(d.freeTotal) + ' req';
-    trackWrap.appendChild(totalLabel);
-
-    row.appendChild(trackWrap);
-    freeContainer.appendChild(row);
+    container.appendChild(row);
   });
 })();
 </script>
