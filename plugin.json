@@ -1,18 +1,7 @@
 {
-  "name": "github-copilot-premium-request-dashboard",
+  "name": "copilot-dashboard",
   "version": "1.0.0",
   "description": "GitHub Copilot の Premium Request 利用状況CSVからHTMLダッシュボードを生成するプラグイン",
-  "skills": [
-    {
-      "name": "generate-dashboard",
-      "path": "skills/generate-dashboard/SKILL.md"
-    }
-  ],
-  "commands": [
-    {
-      "name": "copilot-dashboard",
-      "description": "GitHub Copilot Premium Request のダッシュボードを生成する",
-      "path": "commands/copilot-dashboard.md"
-    }
-  ]
+  "skills": "skills/",
+  "commands": "commands/"
 }

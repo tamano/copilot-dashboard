@@ -18,7 +18,7 @@ GitHub Copilot の Premium Request 利用状況CSVファイルを読み込み、
 2. 以下のコマンドでダッシュボードを生成する
 
 ```bash
-ruby {{PLUGIN_DIR}}/scripts/generate_dashboard.rb <CSVファイルパス> [出力先HTMLパス]
+ruby scripts/generate_dashboard.rb <CSVファイルパス> [出力先HTMLパス]
 ```
 
 - 第1引数: CSVファイルのパス（必須）
