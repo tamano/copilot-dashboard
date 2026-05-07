@@ -32,6 +32,9 @@ copilot
 2. ダッシュボード生成を依頼する（例: 「Copilotの利用状況を可視化して」「premium requestのCSVからダッシュボードを作って」）
    - `skills/generate-dashboard/SKILL.md` が自動で適用される
    - `data/` 配下の CSV を自動検出してダッシュボードを生成する
+3. チームメンバーで CSV を絞り込みたい場合は依頼する（例: 「marty-team のメンバーだけのCSVを作って」）
+   - `skills/filter-csv-by-team/SKILL.md` が自動で適用される
+   - `gh` CLI で Organization の Team メンバーを取得し、CSV から該当ユーザーの行のみを抽出する
 
 ### コマンドラインから直接使う
 
@@ -51,6 +54,24 @@ ruby scripts/generate_dashboard.rb data/<CSVファイル名> output/report.html
 ```
 
 3. 生成された HTML をブラウザで開く
+
+#### 特定の GitHub Team メンバーだけに絞り込む
+
+`gh` CLI で Team メンバー一覧を取得し、CSV を該当ユーザーの行だけに絞り込む:
+
+```bash
+ruby skills/filter-csv-by-team/scripts/filter_by_team.rb <org> <team-slug> data/<CSVファイル名> [出力CSV]
+```
+
+- 第 4 引数を省略すると入力 CSV と同じディレクトリに `<team-slug>_<YYYYMM>.csv` が生成される
+- 標準出力にチーム総メンバー数、書き出し行数、期間中に利用記録がなかったメンバー一覧が表示される
+- 前提: `gh auth status` で Organization の team 読み取り権限がある状態で認証済みであること
+
+絞り込んだ CSV を `generate_dashboard.rb` に渡せば、チーム単位のダッシュボードが作れる:
+
+```bash
+ruby scripts/generate_dashboard.rb data/<team-slug>_<YYYYMM>.csv dashboard-<team-slug>_<YYYYMM>.html
+```
 
 ## ダッシュボードの内容
 
