@@ -120,7 +120,7 @@ def build_daily_trend(rows, dates, users, quota)
     day_rows.each { |r| cumulative[r[:username]] += r[:quantity] }
 
     # Count users who have exceeded quota by this date
-    exceeded = cumulative.count { |_user, total| quota > 0 && total >= quota }
+    exceeded = cumulative.count { |_user, total| quota > 0 && (total / quota * 100).round(1) >= 100 }
     quota_exceeded_count << exceeded
   end
 
